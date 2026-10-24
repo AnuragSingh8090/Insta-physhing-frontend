@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+/* ── Hacker-theme scrollbar — scoped to dashboard only ── */
+.dashboard-root *,
+.dashboard-root {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(74, 222, 128, 0.22) transparent;
+}
+
+.dashboard-root *::-webkit-scrollbar,
+.dashboard-root::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.dashboard-root *::-webkit-scrollbar-track,
+.dashboard-root::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-root *::-webkit-scrollbar-thumb,
+.dashboard-root::-webkit-scrollbar-thumb {
+  background: rgba(74, 222, 128, 0.2);
+  border-radius: 999px;
+}
+
+.dashboard-root *::-webkit-scrollbar-thumb:hover,
+.dashboard-root::-webkit-scrollbar-thumb:hover {
+  background: rgba(74, 222, 128, 0.45);
+}
