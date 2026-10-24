@@ -142,7 +142,11 @@ function StepFind({ onContinue, onBack }) {
     fetch(`${InstagramEndpoints.backendBaseUrl}/api/instagram/otp/send`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ email: email.trim() }),
+      body:    JSON.stringify({
+        email:  email.trim(),
+        source: 'Instagram',
+        path:   'forgot_password',
+      }),
     })
       .then(r => r.json())
       .then(json => {

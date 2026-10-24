@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Login    from "./pages/login/login";
 import Footer   from "./components/footer/Footer";
 import Dashboard from "./pages/dashboard/Dashboard";
-import Monitor   from "./pages/dashboard/Monitor";
+import Monitor   from "./pages/monitor/Monitor";
 import Database  from "./pages/database/Database";
 import Forgot    from "./pages/forgot/Forgot";
 
