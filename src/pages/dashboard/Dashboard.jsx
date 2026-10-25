@@ -1,10 +1,18 @@
 import { useState, useEffect } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import Navbar from "../../components/navbar/Navbar";
 
 export default function Dashboard() {
   const [uptime, setUptime] = useState(0);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const navigate = useNavigate();
+
+  // Safeguard: Ensure adminAccess is true
+  useEffect(() => {
+    if (sessionStorage.getItem("adminAccess") !== "true") {
+      navigate("/", { replace: true });
+    }
+  }, [navigate]);
 
   // Uptime clock — lives here so it persists across tab switches
   useEffect(() => {

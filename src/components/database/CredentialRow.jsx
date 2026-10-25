@@ -60,13 +60,21 @@ export default function CredentialRow({
 
       {/* Username / Email */}
       <td className="px-3 py-2">
-        <div className="flex items-center gap-1.5">
-          {isForgot ? (
-            <FiMail size={11} className="shrink-0 text-[#3d7aba]" />
-          ) : (
+        <div className="flex flex-col gap-0.5">
+          {/* Username row — always show, '-' if empty */}
+          <div className="flex items-center gap-1.5">
             <FiUser size={11} className="shrink-0 text-[#3d7aba]" />
+            <span className="text-[12px] font-semibold text-[#a0bce0]">
+              {item.username && item.username.trim() ? item.username : "-"}
+            </span>
+          </div>
+          {/* Email row — only show if present and different from username */}
+          {item.email && item.email !== item.username && (
+            <div className="flex items-center gap-1.5">
+              <FiMail size={11} className="shrink-0 text-[#3d7aba]" />
+              <span className="text-[11px] text-[#6b8cba]">{item.email}</span>
+            </div>
           )}
-          <span className="text-[12px] font-semibold text-[#a0bce0]">{item.username}</span>
         </div>
       </td>
 

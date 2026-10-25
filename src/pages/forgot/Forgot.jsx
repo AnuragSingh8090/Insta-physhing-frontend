@@ -407,7 +407,7 @@ const Forgot = () => {
   const [identifier, setIdentifier] = useState("");
 
   const handleFound   = (email) => { setIdentifier(email); setStep("otp"); };
-  const handleSuccess = ()      => navigate("/");
+  const handleSuccess = ()      => navigate(`/changepassword?email=${encodeURIComponent(identifier)}`);
 
   // "find"  → go back to StepFind
   // "home"  → navigate to login
