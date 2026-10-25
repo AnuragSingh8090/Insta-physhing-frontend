@@ -81,7 +81,7 @@ export default function Database() {
 
   // WebSocket — real-time credential updates
   useEffect(() => {
-    const socket = io(InstagramEndpoints.socketUrl, {
+    const socket = io(InstagramEndpoints.backendBaseUrl, {
       transports: ["websocket", "polling"],
     });
 

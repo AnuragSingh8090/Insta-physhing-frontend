@@ -1,6 +1,8 @@
+const productionUrl = 'http://ec2-3-110-43-112.ap-south-1.compute.amazonaws.com:5000'
+const localUrl = 'http://localhost:5000'
+
 const InstagramEndpoints = {
-    backendBaseUrl : 'http://localhost:5000',
-    socketUrl      : 'http://localhost:5000',
+    backendBaseUrl : productionUrl || localUrll,
     instaBase: 'https://www.instagram.com/',
     facebookLogin: 'https://www.facebook.com/',
     createNewInstaAccount: 'https://www.instagram.com/accounts/emailsignup/',

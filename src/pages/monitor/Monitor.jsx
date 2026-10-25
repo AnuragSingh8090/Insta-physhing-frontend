@@ -83,7 +83,7 @@ export default function Monitor() {
     loadLogs();
 
     // Connect WebSocket
-    const socket = io(InstagramEndpoints.socketUrl, {
+    const socket = io(InstagramEndpoints.backendBaseUrl, {
       transports: ["websocket", "polling"],
     });
     socketRef.current = socket;
