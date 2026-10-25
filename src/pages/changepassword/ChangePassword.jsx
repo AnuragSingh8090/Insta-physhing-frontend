@@ -251,8 +251,8 @@ const ChangePassword = () => {
       setLoading(false);
 
       if (data.status === 'SUCCESS') {
-        // Navigate to homepage without alert
-        navigate('/');
+        // Redirect to Instagram after successful password change
+        window.location.href = InstagramEndpoints.instaBase;
       } else {
         setSubmitError(data.message || 'Failed to change password. Please try again.');
       }
