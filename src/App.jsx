@@ -4,6 +4,7 @@ import Footer         from "./components/footer/Footer";
 import Dashboard      from "./pages/dashboard/Dashboard";
 import Monitor        from "./pages/monitor/Monitor";
 import Database       from "./pages/database/Database";
+import ControlPanel   from "./pages/controlpannel/ControlPanelNew";
 import Forgot         from "./pages/forgot/Forgot";
 import ChangePassword from "./pages/changepassword/ChangePassword";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -35,10 +36,12 @@ function App() {
           <Route index element={<Navigate to="monitor" replace />} />
           <Route path="monitor"  element={<Monitor />} />
           <Route path="database" element={<Database />} />
+          <Route path="control-panel" element={<ControlPanel />} />
         </Route>
-        {/* Direct access to /monitor or /database also guarded */}
+        {/* Direct access to /monitor, /database, or /control-panel also guarded */}
         <Route path="/monitor"  element={<Navigate to="/dashboard/monitor" replace />} />
         <Route path="/database" element={<Navigate to="/dashboard/database" replace />} />
+        <Route path="/control-panel" element={<Navigate to="/dashboard/control-panel" replace />} />
       </Route>
 
       {/* Catch-all unknown routes redirect to home */}

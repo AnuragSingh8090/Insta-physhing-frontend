@@ -19,6 +19,16 @@ const IcoDatabase = () => (
   </svg>
 );
 
+const IcoControlPanel = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}
+    strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+    <rect x="3" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="14" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" />
+  </svg>
+);
+
 const IcoWifi = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}
     strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
@@ -89,6 +99,20 @@ export default function Navbar({ uptime = 0, autoRefresh = true, onToggleAutoRef
         >
           <IcoDatabase />
           Database
+        </NavLink>
+
+        <NavLink
+          to="/dashboard/control-panel"
+          className={({ isActive }) =>
+            `flex items-center gap-2 px-3 py-2.5 text-[12px] font-semibold tracking-widest uppercase border-b-2 transition-all cursor-pointer ${
+              isActive
+                ? "border-[#3d7aba] text-[#6ab0ff]"
+                : "border-transparent text-[#3a5a8a] hover:text-[#6b8cba] hover:border-[#1e3260]"
+            }`
+          }
+        >
+          <IcoControlPanel />
+          Control Panel
         </NavLink>
       </nav>
 
