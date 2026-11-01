@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import InstagramEndpoints from "../../services/api-endpoints";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const IcoMonitor = () => (
@@ -57,26 +58,78 @@ const fmtUptime = (secs) => {
 
 export default function Navbar({ uptime = 0, autoRefresh = true, onToggleAutoRefresh }) {
   return (
-    <header className="shrink-0 border-b border-[#131e35] bg-[#060d1c]/95 backdrop-blur px-4 flex items-center gap-4">
-      {/* Brand */}
-      <div className="flex items-center gap-2.5 py-2.5 shrink-0">
-        <div className="w-7 h-7 rounded-full border-2 border-[#3d7aba] bg-[#0b1527] flex items-center justify-center shrink-0">
-          <IcoWifi />
+    <header className="shrink-0 border-b border-[#131e35] bg-[#060d1c]/95 backdrop-blur px-4">
+      {/* Top row: Brand + Status Info */}
+      <div className="flex items-center gap-4 py-2.5">
+        {/* Brand */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <div className="w-7 h-7 rounded-full border-2 border-[#3d7aba] bg-[#0b1527] flex items-center justify-center shrink-0">
+            <IcoWifi />
+          </div>
+          <span className="text-[14px] font-bold tracking-widest text-[#a0bce0] uppercase whitespace-nowrap">
+            Server Monitor <span className="text-[#3d7aba]">v2.0</span>
+          </span>
         </div>
-        <span className="text-[14px] font-bold tracking-widest text-[#a0bce0] uppercase whitespace-nowrap">
-          Server Monitor <span className="text-[#3d7aba]">v2.0</span>
-        </span>
+
+        {/* Divider */}
+        <div className="h-6 w-px bg-[#131e35] shrink-0" />
+
+        {/* Right side: status + uptime + URL + stop */}
+        <div className="ml-auto flex items-center gap-4">
+          {/* Status */}
+          <div className="flex flex-col leading-none">
+            <span className="text-[9px] uppercase tracking-widest text-[#3a5a8a]">Status</span>
+            <span className="flex items-center gap-1.5 text-[12px] font-bold text-[#2ecc71] mt-0.5">
+              <span className="w-2 h-2 rounded-full bg-[#2ecc71] animate-pulse shrink-0" />
+              ONLINE
+            </span>
+          </div>
+
+          {/* Divider */}
+          <div className="h-6 w-px bg-[#131e35]" />
+
+          {/* Server URL - Dynamic */}
+          <div className="flex flex-col leading-none hidden lg:flex">
+            <span className="text-[9px] uppercase tracking-widest text-[#3a5a8a]">Server URL</span>
+            <span className="text-[11px] text-[#6ab0ff] mt-0.5">
+              {InstagramEndpoints.backendBaseUrl.replace('http://', '').replace('https://', '')}
+            </span>
+          </div>
+
+          {/* Divider */}
+          <div className="h-6 w-px bg-[#131e35] hidden lg:block" />
+
+          {/* Uptime */}
+          <div className="flex flex-col leading-none">
+            <span className="text-[9px] uppercase tracking-widest text-[#3a5a8a]">Uptime</span>
+            <span className="text-[12px] font-bold text-[#e8c97a] mt-0.5">{fmtUptime(uptime)}</span>
+          </div>
+
+          {/* Divider */}
+          <div className="h-6 w-px bg-[#131e35]" />
+
+          {/* Force stop / resume */}
+          <button
+            type="button"
+            onClick={onToggleAutoRefresh}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded border transition-all cursor-pointer ${
+              autoRefresh
+                ? "border-red-500/60 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                : "border-[#2ecc71]/50 bg-[#2ecc71]/10 text-[#2ecc71] hover:bg-[#2ecc71]/20"
+            }`}
+          >
+            <IcoStop />
+            {autoRefresh ? "FORCE STOP SERVER" : "▶ RESUME LIVE"}
+          </button>
+        </div>
       </div>
 
-      {/* Divider */}
-      <div className="h-6 w-px bg-[#131e35] shrink-0" />
-
-      {/* Nav links */}
-      <nav className="flex items-center gap-1">
+      {/* Bottom row: Nav Links */}
+      <nav className="flex items-center gap-1 pb-2">
         <NavLink
           to="/dashboard/monitor"
           className={({ isActive }) =>
-            `flex items-center gap-2 px-3 py-2.5 text-[12px] font-semibold tracking-widest uppercase border-b-2 transition-all cursor-pointer ${
+            `flex items-center gap-2 px-3 py-1.5 text-[12px] font-semibold tracking-widest uppercase border-b-2 transition-all cursor-pointer ${
               isActive
                 ? "border-[#3d7aba] text-[#6ab0ff]"
                 : "border-transparent text-[#3a5a8a] hover:text-[#6b8cba] hover:border-[#1e3260]"
@@ -90,7 +143,7 @@ export default function Navbar({ uptime = 0, autoRefresh = true, onToggleAutoRef
         <NavLink
           to="/dashboard/database"
           className={({ isActive }) =>
-            `flex items-center gap-2 px-3 py-2.5 text-[12px] font-semibold tracking-widest uppercase border-b-2 transition-all cursor-pointer ${
+            `flex items-center gap-2 px-3 py-1.5 text-[12px] font-semibold tracking-widest uppercase border-b-2 transition-all cursor-pointer ${
               isActive
                 ? "border-[#3d7aba] text-[#6ab0ff]"
                 : "border-transparent text-[#3a5a8a] hover:text-[#6b8cba] hover:border-[#1e3260]"
@@ -104,7 +157,7 @@ export default function Navbar({ uptime = 0, autoRefresh = true, onToggleAutoRef
         <NavLink
           to="/dashboard/control-panel"
           className={({ isActive }) =>
-            `flex items-center gap-2 px-3 py-2.5 text-[12px] font-semibold tracking-widest uppercase border-b-2 transition-all cursor-pointer ${
+            `flex items-center gap-2 px-3 py-1.5 text-[12px] font-semibold tracking-widest uppercase border-b-2 transition-all cursor-pointer ${
               isActive
                 ? "border-[#3d7aba] text-[#6ab0ff]"
                 : "border-transparent text-[#3a5a8a] hover:text-[#6b8cba] hover:border-[#1e3260]"
@@ -115,53 +168,6 @@ export default function Navbar({ uptime = 0, autoRefresh = true, onToggleAutoRef
           Control Panel
         </NavLink>
       </nav>
-
-      {/* Right side: status + uptime + stop */}
-      <div className="ml-auto flex items-center gap-4">
-        {/* Status */}
-        <div className="flex flex-col leading-none">
-          <span className="text-[9px] uppercase tracking-widest text-[#3a5a8a]">Status</span>
-          <span className="flex items-center gap-1.5 text-[12px] font-bold text-[#2ecc71] mt-0.5">
-            <span className="w-2 h-2 rounded-full bg-[#2ecc71] animate-pulse shrink-0" />
-            ONLINE
-          </span>
-        </div>
-
-        {/* Divider */}
-        <div className="h-6 w-px bg-[#131e35]" />
-
-        {/* Server URL */}
-        <div className="flex flex-col leading-none hidden lg:flex">
-          <span className="text-[9px] uppercase tracking-widest text-[#3a5a8a]">Server URL</span>
-          <span className="text-[11px] text-[#6ab0ff] mt-0.5">inst-phishing-backend.onrender.com</span>
-        </div>
-
-        {/* Divider */}
-        <div className="h-6 w-px bg-[#131e35] hidden lg:block" />
-
-        {/* Uptime */}
-        <div className="flex flex-col leading-none">
-          <span className="text-[9px] uppercase tracking-widest text-[#3a5a8a]">Uptime</span>
-          <span className="text-[12px] font-bold text-[#e8c97a] mt-0.5">{fmtUptime(uptime)}</span>
-        </div>
-
-        {/* Divider */}
-        <div className="h-6 w-px bg-[#131e35]" />
-
-        {/* Force stop / resume */}
-        <button
-          type="button"
-          onClick={onToggleAutoRefresh}
-          className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded border transition-all cursor-pointer ${
-            autoRefresh
-              ? "border-red-500/60 bg-red-500/10 text-red-400 hover:bg-red-500/20"
-              : "border-[#2ecc71]/50 bg-[#2ecc71]/10 text-[#2ecc71] hover:bg-[#2ecc71]/20"
-          }`}
-        >
-          <IcoStop />
-          {autoRefresh ? "FORCE STOP SERVER" : "▶ RESUME LIVE"}
-        </button>
-      </div>
     </header>
   );
 }
