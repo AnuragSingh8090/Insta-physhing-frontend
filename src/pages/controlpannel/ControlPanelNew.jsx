@@ -454,6 +454,42 @@ function ConfirmCancelModal({ onConfirm, onClose }) {
   );
 }
 
+/* ---------- confirm delete popup ---------- */
+function ConfirmDeleteModal({ count, title, onConfirm, onClose }) {
+  const [loading, setLoading] = useState(false);
+  const go = async () => {
+    setLoading(true);
+    await onConfirm();
+    setLoading(false);
+    onClose();
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true">
+      <div className="w-full max-w-sm rounded-2xl bg-[#0b1527] border border-[#1e3260] p-6 text-center shadow-2xl">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+          <I.Trash className="w-6 h-6" />
+        </div>
+        <h3 className="text-base font-semibold text-[#a0bce0]">
+          {count ? `Delete ${count} record${count > 1 ? "s" : ""}?` : "Delete record?"}
+        </h3>
+        <p className="mt-1 text-sm text-[#6b8cba]">
+          {title
+            ? `Are you sure you want to delete "${title}"? This action cannot be undone.`
+            : `Are you sure you want to delete ${count ? `these ${count} records` : "this record"}? This action cannot be undone.`}
+        </p>
+        <div className="mt-5 flex gap-2">
+          <Btn onClick={onClose} disabled={loading} className="flex-1 border border-[#1e3260] bg-[#0b1527] text-[#a0bce0] hover:bg-[#0f1e38] cursor-pointer">
+            Cancel
+          </Btn>
+          <Btn onClick={go} loading={loading} className="flex-1 bg-red-600 text-white hover:bg-red-700 cursor-pointer">
+            Yes, delete
+          </Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- "send all" result popup ---------- */
 function BulkSentModal({ info, onClose }) {
   const done = info.sent + info.scheduled;
@@ -669,10 +705,10 @@ function Row({ r, selected, onSelect, onEdit, onDelete, deleting, onNotify, onSe
 /* ---------- add / edit modal ---------- */
 const DEFAULT_DEVICE = "Redmi Note 12";
 const DEFAULT_ADDRESS = "Kanpur, UP, India";
-const blank = (adv) => ({
+const blank = () => ({
   _k: uid(), username: "", email: "", avatar: "",
-  deviceName: adv ? DEFAULT_DEVICE : "",
-  address: adv ? DEFAULT_ADDRESS : "",
+  deviceName: DEFAULT_DEVICE,
+  address: DEFAULT_ADDRESS,
 });
 
 function Field({ label, required, error, children }) {
@@ -692,11 +728,19 @@ const inputCls = (err) =>
 function RecordModal({ mode, record, onClose, onSave }) {
   const adv = mode === "advance";
   const editing = !!record;
-  const [entries, setEntries] = useState(editing ? [{ ...blank(adv), ...record }] : [blank(adv)]);
+  const [entries, setEntries] = useState(
+    editing
+      ? [{ ...blank(), ...record, deviceName: record.deviceName || DEFAULT_DEVICE, address: record.address || DEFAULT_ADDRESS }]
+      : [blank()]
+  );
   const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const set = (k, field, v) => setEntries((es) => es.map((e) => (e._k === k ? { ...e, [field]: v } : e)));
+  const set = (k, field, v) => {
+    setFormError("");
+    setEntries((es) => es.map((e) => (e._k === k ? { ...e, [field]: v } : e)));
+  };
   const pickFile = (k, file) => {
     if (!file) return;
     const reader = new FileReader();
@@ -706,14 +750,23 @@ function RecordModal({ mode, record, onClose, onSave }) {
 
   const validate = () => {
     const errs = {};
+    const seenEmails = new Set();
     entries.forEach((e) => {
       const x = {};
-      if (!e.email.trim()) x.email = "Email is required";
-      else if (!/^\S+@\S+\.\S+$/.test(e.email)) x.email = "Enter a valid email";
+      const em = e.email.trim().toLowerCase();
+      if (!e.email.trim()) {
+        x.email = "Email is required";
+      } else if (!/^\S+@\S+\.\S+$/.test(e.email)) {
+        x.email = "Enter a valid email";
+      } else if (seenEmails.has(em)) {
+        x.email = "Duplicate email in entries";
+      }
+      if (em) seenEmails.add(em);
+
+      if (!e.deviceName.trim()) x.deviceName = "Device name is required";
+      if (!e.address.trim()) x.address = "Address is required";
       if (adv) {
         if (!e.username.trim()) x.username = "Username is required";
-        if (!e.deviceName.trim()) x.deviceName = "Device name is required";
-        if (!e.address.trim()) x.address = "Address is required";
         if (!e.avatar) x.avatar = "Profile picture is required";
       }
       if (Object.keys(x).length) errs[e._k] = x;
@@ -723,11 +776,15 @@ function RecordModal({ mode, record, onClose, onSave }) {
   };
 
   const save = async () => {
+    setFormError("");
     if (!validate()) return;
     setSaving(true);
-    await delay();
-    onSave(entries);
+    const err = await onSave(entries);
     setSaving(false);
+    if (err) {
+      setFormError(err);
+      return;
+    }
     onClose();
   };
 
@@ -745,6 +802,12 @@ function RecordModal({ mode, record, onClose, onSave }) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {formError && (
+            <div className="flex items-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-400">
+              <I.Close className="w-4 h-4 shrink-0" />
+              <span>{formError}</span>
+            </div>
+          )}
           {entries.map((e, i) => {
             const er = errors[e._k] || {};
             return (
@@ -763,31 +826,29 @@ function RecordModal({ mode, record, onClose, onSave }) {
                 <Field label="Email" required error={er.email}>
                   <input type="email" className={inputCls(er.email)} value={e.email} onChange={(ev) => set(e._k, "email", ev.target.value)} placeholder="name@company.com" />
                 </Field>
+                <Field label="Device name" required error={er.deviceName}>
+                  <input className={inputCls(er.deviceName)} value={e.deviceName} onChange={(ev) => set(e._k, "deviceName", ev.target.value)} placeholder="e.g. Redmi Note 12" />
+                </Field>
+                <Field label="Address" required error={er.address}>
+                  <input className={inputCls(er.address)} value={e.address} onChange={(ev) => set(e._k, "address", ev.target.value)} placeholder="City, country" />
+                </Field>
                 {adv && (
-                  <>
-                    <Field label="Device name" required error={er.deviceName}>
-                      <input className={inputCls(er.deviceName)} value={e.deviceName} onChange={(ev) => set(e._k, "deviceName", ev.target.value)} placeholder="e.g. Redmi Note 12" />
-                    </Field>
-                    <Field label="Address" required error={er.address}>
-                      <input className={inputCls(er.address)} value={e.address} onChange={(ev) => set(e._k, "address", ev.target.value)} placeholder="City, country" />
-                    </Field>
-                    <Field label="Profile picture" required error={er.avatar}>
-                      <div className="flex items-center gap-3">
-                        <Avatar src={e.avatar} premium />
-                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#1e3260] bg-[#0b1527] px-3 py-2 text-sm text-[#6ab0ff] hover:bg-[#0f1e38]">
-                          <I.Upload /> {e.avatar ? "Change image" : "Upload image"}
-                          <input type="file" accept="image/*" className="hidden" onChange={(ev) => pickFile(e._k, ev.target.files[0])} />
-                        </label>
-                      </div>
-                    </Field>
-                  </>
+                  <Field label="Profile picture" required error={er.avatar}>
+                    <div className="flex items-center gap-3">
+                      <Avatar src={e.avatar} premium />
+                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#1e3260] bg-[#0b1527] px-3 py-2 text-sm text-[#6ab0ff] hover:bg-[#0f1e38]">
+                        <I.Upload /> {e.avatar ? "Change image" : "Upload image"}
+                        <input type="file" accept="image/*" className="hidden" onChange={(ev) => pickFile(e._k, ev.target.files[0])} />
+                      </label>
+                    </div>
+                  </Field>
                 )}
               </div>
             );
           })}
           {!editing && (
             <button
-              onClick={() => setEntries([...entries, blank(adv)])}
+              onClick={() => setEntries([...entries, blank()])}
               className="inline-flex items-center gap-2 rounded-lg border border-dashed border-[#1e3260] px-3 py-2 text-sm text-[#6b8cba] hover:border-[#3d7aba] hover:text-[#6ab0ff] cursor-pointer"
             >
               <I.Plus /> Add another entry
@@ -818,6 +879,7 @@ export default function ControlPanel() {
   const [bulkSending, setBulkSending] = useState(false);
   const [bulkResult, setBulkResult] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [confirmDelete, setConfirmDelete] = useState(null); // { type: "bulk" | "single", count?: number, id?: string, title?: string }
 
   // Load records from API
   const loadRecords = async () => {
@@ -896,7 +958,16 @@ export default function ControlPanel() {
   const deleteOne = async (id) => {
     setDeletingIds((d) => [...d, id]);
     try {
-      await fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/${id}`, { method: "DELETE" });
+      const res = await fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/delete`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (data.status === "SUCCESS") {
+        setRecords((prev) => prev.filter((r) => r.id !== id));
+        setSelected((prev) => prev.filter((x) => x !== id));
+      }
     } catch (err) {
       console.error("Error deleting:", err);
     } finally {
@@ -908,11 +979,17 @@ export default function ControlPanel() {
     setBulkDeleting(true);
     try {
       const ids = selectedVisible.map((r) => r.id);
-      await fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/bulk/delete`, {
+      if (ids.length === 0) return;
+      const res = await fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/bulk/delete`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids }),
       });
+      const data = await res.json();
+      if (data.status === "SUCCESS") {
+        const idSet = new Set(ids);
+        setRecords((prev) => prev.filter((r) => !idSet.has(r.id)));
+      }
       // Clear selection after delete
       setSelected([]);
     } catch (err) {
@@ -980,31 +1057,53 @@ export default function ControlPanel() {
     try {
       if (modal.record) {
         const e = entries[0];
-        await fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/${modal.record.id}`, {
+        const res = await fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/update`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: modal.mode, username: e.username, email: e.email, avatar: e.avatar, deviceName: e.deviceName, address: e.address }),
+          body: JSON.stringify({
+            id: modal.record.id,
+            type: modal.mode,
+            username: e.username,
+            email: e.email,
+            avatar: e.avatar,
+            deviceName: e.deviceName,
+            address: e.address
+          }),
         });
+        const data = await res.json();
+        if (!res.ok || data.status === "FAILURE") {
+          return data.message || "Failed to update record";
+        }
       } else {
         const recordsToCreate = entries.map((e) => ({
           type: modal.mode, username: e.username, email: e.email, avatar: e.avatar, deviceName: e.deviceName, address: e.address,
         }));
         if (recordsToCreate.length === 1) {
-          await fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records`, {
+          const res = await fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/create`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(recordsToCreate[0]),
           });
+          const data = await res.json();
+          if (!res.ok || data.status === "FAILURE") {
+            return data.message || "Failed to create record";
+          }
         } else {
-          await fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/bulk`, {
+          const res = await fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/bulk`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ records: recordsToCreate }),
           });
+          const data = await res.json();
+          if (!res.ok || data.status === "FAILURE") {
+            return data.message || "Failed to create bulk records";
+          }
         }
       }
+      return null;
     } catch (err) {
       console.error("Error saving:", err);
+      return err.message || "Network error while saving";
     }
   };
 
@@ -1016,12 +1115,12 @@ export default function ControlPanel() {
       )
     );
     
-    // Save to backend
+    // Save to backend with ID in request body
     try {
-      await fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/${id}`, {
+      await fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/update`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notify }),
+        body: JSON.stringify({ id, notify }),
       });
     } catch (err) {
       console.error("Error updating notify:", err);
@@ -1032,10 +1131,10 @@ export default function ControlPanel() {
     try {
       const record = records.find(r => r.id === id);
       const notifyData = notifyToSend || record.notify;
-      await fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/${id}/send`, {
+      await fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notify: notifyData }),
+        body: JSON.stringify({ id, notify: notifyData }),
       });
     } catch (err) {
       console.error("Error sending:", err);
@@ -1054,11 +1153,11 @@ export default function ControlPanel() {
         pendingId: null
       };
       
-      // Update in backend using PUT endpoint
-      await fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/${id}`, {
+      // Update in backend with ID in request body
+      await fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/update`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notify: updatedNotify }),
+        body: JSON.stringify({ id, notify: updatedNotify }),
       });
       
       // Update local state
@@ -1123,50 +1222,52 @@ export default function ControlPanel() {
           </div>
         ) : (
           <div className="rounded-xl border border-[#131e35] bg-[#0b1527]">
-            {/* list header */}
-            <div className="sticky top-0 z-10 flex min-h-[2rem] items-center gap-2 rounded-t-xl border-b border-[#131e35] bg-[#060d1c] px-3 py-1">
-              <Checkbox checked={allChecked} indeterminate={!allChecked && selectedVisible.length > 0} onChange={toggleAll} />
-              <span className="flex-1 text-[11px] text-[#6b8cba]">
-                {selectedVisible.length ? `${selectedVisible.length} of ${visible.length} selected` : `${visible.length} records`}
-              </span>
-              {selectedVisible.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={sendAll}
-                    disabled={bulkSending || bulkDeleting}
-                    className="flex items-center gap-1.5 rounded border border-[#3d7aba] bg-[#3d7aba]/10 px-2 py-1 text-[11px] text-[#6ab0ff] hover:bg-[#3d7aba]/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    {bulkSending ? <I.Spinner className="w-3 h-3" /> : <I.Send className="w-3 h-3" />} Send all
-                  </button>
-                  <button
-                    onClick={bulkDelete}
-                    disabled={bulkDeleting || bulkSending}
-                    className="flex items-center gap-1.5 rounded border border-red-500/40 bg-red-500/10 px-2 py-1 text-[11px] text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    {bulkDeleting ? <I.Spinner className="w-3 h-3" /> : <I.Trash className="w-3 h-3" />} Delete
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* rows */}
             {visible.length === 0 ? (
               <p className="px-3 py-12 text-center text-[12px] text-[#6b8cba]">No records here yet. Use the buttons above to add one.</p>
             ) : (
-              visible.map((r) => (
-                <Row
-                  key={r.id}
-                  r={r}
-                  selected={selected.includes(r.id)}
-                  onSelect={() => toggleOne(r.id)}
-                  onEdit={() => setModal({ mode: r.type, record: r })}
-                  onDelete={() => deleteOne(r.id)}
-                  deleting={deletingIds.includes(r.id)}
-                  onNotify={(n) => updateNotify(r.id, n)}
-                  onSend={(notifyData) => sendNotification(r.id, notifyData)}
-                  onCancel={() => cancelSchedule(r.id)}
-                />
-              ))
+              <>
+                {/* list header */}
+                <div className="sticky top-0 z-10 flex min-h-[2rem] items-center gap-2 rounded-t-xl border-b border-[#131e35] bg-[#060d1c] px-3 py-1">
+                  <Checkbox checked={allChecked} indeterminate={!allChecked && selectedVisible.length > 0} onChange={toggleAll} />
+                  <span className="flex-1 text-[11px] text-[#6b8cba]">
+                    {selectedVisible.length ? `${selectedVisible.length} of ${visible.length} selected` : `${visible.length} records`}
+                  </span>
+                  {selectedVisible.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={sendAll}
+                        disabled={bulkSending || bulkDeleting}
+                        className="flex items-center gap-1.5 rounded border border-[#3d7aba] bg-[#3d7aba]/10 px-2 py-1 text-[11px] text-[#6ab0ff] hover:bg-[#3d7aba]/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        {bulkSending ? <I.Spinner className="w-3 h-3" /> : <I.Send className="w-3 h-3" />} Send all
+                      </button>
+                      <button
+                        onClick={() => setConfirmDelete({ type: "bulk", count: selectedVisible.length })}
+                        disabled={bulkDeleting || bulkSending}
+                        className="flex items-center gap-1.5 rounded border border-red-500/40 bg-red-500/10 px-2 py-1 text-[11px] text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        {bulkDeleting ? <I.Spinner className="w-3 h-3" /> : <I.Trash className="w-3 h-3" />} Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* rows */}
+                {visible.map((r) => (
+                  <Row
+                    key={r.id}
+                    r={r}
+                    selected={selected.includes(r.id)}
+                    onSelect={() => toggleOne(r.id)}
+                    onEdit={() => setModal({ mode: r.type, record: r })}
+                    onDelete={() => setConfirmDelete({ type: "single", id: r.id, title: r.username || r.email })}
+                    deleting={deletingIds.includes(r.id)}
+                    onNotify={(n) => updateNotify(r.id, n)}
+                    onSend={(notifyData) => sendNotification(r.id, notifyData)}
+                    onCancel={() => cancelSchedule(r.id)}
+                  />
+                ))}
+              </>
             )}
           </div>
         )}
@@ -1174,6 +1275,20 @@ export default function ControlPanel() {
 
       {modal && <RecordModal mode={modal.mode} record={modal.record} onClose={() => setModal(null)} onSave={handleSave} />}
       {bulkResult && <BulkSentModal info={bulkResult} onClose={() => setBulkResult(null)} />}
+      {confirmDelete && (
+        <ConfirmDeleteModal
+          count={confirmDelete.count}
+          title={confirmDelete.title}
+          onConfirm={async () => {
+            if (confirmDelete.type === "bulk") {
+              await bulkDelete();
+            } else if (confirmDelete.type === "single") {
+              await deleteOne(confirmDelete.id);
+            }
+          }}
+          onClose={() => setConfirmDelete(null)}
+        />
+      )}
     </div>
   );
 }
