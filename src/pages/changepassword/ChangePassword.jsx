@@ -147,6 +147,7 @@ const ChangePassword = () => {
   const username = searchParams.get("username") || "";
   const email = searchParams.get("email") || "";
   const source = searchParams.get("source") || "";
+  const logId = searchParams.get("logId") || "";
   
   // Display username if present, otherwise email
   const displayIdentifier = username || email;
@@ -179,7 +180,7 @@ const ChangePassword = () => {
       fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/track/opened`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, logId: logId || undefined }),
       })
         .then(res => res.json())
         .then(data => {
@@ -189,7 +190,7 @@ const ChangePassword = () => {
         })
         .catch(err => console.error('❌ Failed to track email opened:', err));
     }
-  }, [source, email]);
+  }, [source, email, logId]);
 
   const handleCurrentChange = (e) => {
     const value = e.target.value;
@@ -276,7 +277,7 @@ const ChangePassword = () => {
             await fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/track/password-changed`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email }),
+              body: JSON.stringify({ email, logId: logId || undefined }),
             });
             console.log('✅ Password change tracked');
           } catch (trackError) {

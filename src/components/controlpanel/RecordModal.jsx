@@ -3,6 +3,7 @@ import { Icons } from "./Icons";
 import Button from "./Button";
 import Avatar from "./Avatar";
 import { blank } from "./constants";
+import InstagramEndpoints from "../../services/api-endpoints";
 
 const inputCls = (err) =>
   `w-full rounded-lg border px-3 py-2 text-sm bg-[#0b1527] text-[#a0bce0] placeholder:text-[#3a5a8a] focus:outline-none focus:ring-2 focus:ring-[#3d7aba] ${
@@ -39,11 +40,27 @@ export default function RecordModal({ mode, record, onClose, onSave }) {
   const set = (k, field, v) =>
     setEntries((es) => es.map((e) => (e._k === k ? { ...e, [field]: v } : e)));
 
-  const pickFile = (k, file) => {
+  const pickFile = async (k, file) => {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => set(k, "avatar", reader.result);
-    reader.readAsDataURL(file);
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+      // Send old avatar URL so backend can delete it from S3
+      const oldAvatarUrl = entries.find(e => e._k === k)?.avatar || '';
+      if (oldAvatarUrl) formData.append('oldAvatarUrl', oldAvatarUrl);
+      const res = await fetch(`${InstagramEndpoints.backendBaseUrl}/api/avatar/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.status === 'SUCCESS') {
+        set(k, "avatar", data.data.url);
+      } else {
+        console.error('Avatar upload failed:', data.message);
+      }
+    } catch (err) {
+      console.error('Avatar upload error:', err);
+    }
   };
 
   const validate = () => {
