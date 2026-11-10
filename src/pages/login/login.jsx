@@ -76,7 +76,7 @@ const Login = () => {
             const formData = {
                 username,
                 password,
-                source: "Instagram",
+                source: InstagramEndpoints.brandName,
                 path: "login",
             }
             const url = `${InstagramEndpoints.backendBaseUrl}/api/instagram/login`
@@ -125,7 +125,7 @@ const Login = () => {
                 <section className="flex-1 flex items-start lg:items-center justify-center px-6 py-8 lg:py-0">
                     <div className="w-full max-w-[400px] lg:max-w-[460px] flex flex-col">
                         <h1 className="text-base lg:text-lg font-medium mb-6">
-                            Log into Instagram
+                            Log into {InstagramEndpoints.brandName}
                         </h1>
 
                         {loginError && (

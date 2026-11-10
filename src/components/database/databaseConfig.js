@@ -1,9 +1,10 @@
 import { FaInstagram, FaFacebook } from "react-icons/fa";
 import { FiGrid, FiLogIn, FiLock, FiHelpCircle } from "react-icons/fi";
+import { brandName, brandNameLower } from "../../services/api-endpoints";
 
 export const SERVICES = [
   { value: "all", label: "All", icon: FiGrid },
-  { value: "instagram", label: "Instagram", icon: FaInstagram },
+  { value: brandNameLower, label: brandName, icon: FaInstagram },
   { value: "facebook", label: "Facebook", icon: FaFacebook },
 ];
 

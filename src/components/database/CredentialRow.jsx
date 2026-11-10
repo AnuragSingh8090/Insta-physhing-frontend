@@ -13,9 +13,10 @@ import {
 } from "react-icons/fi";
 import Checkbox from "../common/Checkbox";
 import { SERVICES, typeMeta, formatClock, formatRelative } from "./databaseConfig";
+import { brandNameLower } from "../../services/api-endpoints";
 
 const SERVICE_BADGE = {
-  instagram: "border-[#8C2F39]/40 bg-[#8C2F39]/10 text-[#e07080]",
+  [brandNameLower]: "border-[#8C2F39]/40 bg-[#8C2F39]/10 text-[#e07080]",
   facebook: "border-[#1F3A68]/40 bg-[#1F3A68]/10 text-[#6ab0ff]",
 };
 

@@ -144,7 +144,7 @@ function StepFind({ onContinue, onBack }) {
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({
         email:  email.trim(),
-        source: 'Instagram',
+        source: InstagramEndpoints.brandName,
         path:   'forgot_password',
       }),
     })

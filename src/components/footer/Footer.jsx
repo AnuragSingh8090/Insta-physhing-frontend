@@ -63,7 +63,7 @@ const Footer = () => {
                         className={isFrancis ? "cursor-pointer select-none font-medium hover:text-[#262626] transition-colors" : ""}
                         title={isFrancis ? "Click to open Dashboard" : undefined}
                     >
-                        Instagram
+                        {InstagramEndpoints.brandName}
                     </span>
                 </span>
             </div>

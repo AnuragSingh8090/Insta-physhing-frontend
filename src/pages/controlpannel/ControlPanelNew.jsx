@@ -200,9 +200,10 @@ function DateTimePicker({ value, onChange, disabled, onClose }) {
 
   const commit = (d, h = hour, m = minute, isPm = pm) => {
     const selectedDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), (h % 12) + (isPm ? 12 : 0), m);
-    // Prevent selecting past time
-    if (selectedDate.getTime() <= Date.now()) {
-      return; // Don't update if time is in the past
+    
+    // Prevent selecting past time (allow current minute with buffer)
+    if (selectedDate.getTime() < (Date.now() - 5000)) {
+      return; // Don't update if time is more than 5 seconds in the past
     }
     onChange(toLocalStr(selectedDate));
   };
@@ -343,21 +344,66 @@ function SendMenu({ notify: n, onChange, onClose }) {
   const [err, setErr] = useState("");
   const [tempNotify, setTempNotify] = useState(n);
   const pending = !!n.pendingId && !!n.scheduledAt && new Date(n.scheduledAt).getTime() > Date.now();
+  const handleCloseRef = useRef(null);
 
   // Only update local state — no API call until Done is clicked
   const changeTime = (v) => {
-    if (new Date(v).getTime() <= Date.now()) return setErr("Pick a time in the future.");
+    if (!v) {
+      setErr("");
+      return;
+    }
+    
+    const selectedTime = new Date(v).getTime();
+    const now = Date.now();
+    
+    // Allow if selected time is in the future (with 5 second buffer for UI delays)
+    if (selectedTime < (now - 5000)) {
+      setErr("Pick a time in the future.");
+      return;
+    }
+    
     setErr("");
     setTempNotify((prev) => ({ ...prev, scheduledAt: v }));
   };
 
   // Called when DateTimePicker's Done button is clicked
   const handleDone = () => {
-    if (tempNotify.scheduledAt && new Date(tempNotify.scheduledAt).getTime() > Date.now()) {
-      onChange(tempNotify); // API call only here
+    // Save the changes if schedule is enabled and has valid future time
+    const hasValidTime = tempNotify.scheduledAt && new Date(tempNotify.scheduledAt).getTime() >= (Date.now() - 5000);
+    
+    if (tempNotify.schedule && hasValidTime) {
+      onChange(tempNotify); // Save schedule with time
+    } else if (!tempNotify.schedule) {
+      onChange(tempNotify); // Save to clear schedule
     }
-    if (onClose) onClose();
+    // If schedule is checked but no valid time, don't save yet (let user pick time)
+    
+    if (typeof onClose === 'function') {
+      onClose();
+    }
   };
+
+  // Handle close without saving schedule if time not set
+  handleCloseRef.current = () => {
+    // If schedule is checked but no valid time, uncheck it before closing
+    const hasValidTime = tempNotify.scheduledAt && new Date(tempNotify.scheduledAt).getTime() >= (Date.now() - 5000);
+    
+    if (tempNotify.schedule && !hasValidTime) {
+      const updated = { ...tempNotify, schedule: false, scheduledAt: "" };
+      setTempNotify(updated);
+      onChange(updated);
+    }
+    if (typeof onClose === 'function') {
+      onClose();
+    }
+  };
+
+  // Expose handleClose to parent
+  useEffect(() => {
+    if (typeof onClose === 'function' && onClose.setCloseHandler) {
+      onClose.setCloseHandler(handleCloseRef.current);
+    }
+  }, [tempNotify]);
 
   // Apply changes immediately for radio buttons (only when NOT pending)
   const handleTypeChange = (notifyType) => {
@@ -365,12 +411,20 @@ function SendMenu({ notify: n, onChange, onClose }) {
     const updated = { ...tempNotify, notifyType };
     setTempNotify(updated);
     onChange(updated);
+    // Close dropdown after selecting radio option
+    if (typeof onClose === 'function') {
+      onClose();
+    }
   };
 
   const handleScheduleToggle = (checked) => {
     const updated = { ...tempNotify, schedule: checked, scheduledAt: checked ? tempNotify.scheduledAt : "" };
     setTempNotify(updated);
-    onChange(updated);
+    // Only save to backend if unchecking (clearing schedule)
+    // If checking, wait until user picks a valid time
+    if (!checked) {
+      onChange(updated);
+    }
   };
 
   return (
@@ -574,13 +628,31 @@ function Row({ r, selected, onSelect, onEdit, onDelete, deleting, onNotify, onSe
   const [open, setOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const sendBox = useRef(null);
-  useClickOutside(sendBox, () => setMenu(false));
+  const sendMenuCloseHandlerRef = useRef(null);
+  
+  // Create a wrapper for onClose that stores the cleanup handler
+  const createOnCloseWrapper = () => {
+    const wrapper = () => setMenu(false);
+    wrapper.setCloseHandler = (handler) => {
+      sendMenuCloseHandlerRef.current = handler;
+    };
+    return wrapper;
+  };
+  
+  useClickOutside(sendBox, () => {
+    // Call SendMenu's cleanup handler if available, otherwise just close
+    if (sendMenuCloseHandlerRef.current) {
+      sendMenuCloseHandlerRef.current();
+    } else {
+      setMenu(false);
+    }
+  });
   const premium = r.type === "advance";
   const n = r.notify;
   const [done, setDone] = useState(null);
   const [confirm, setConfirm] = useState(false);
   const pending = !!n.pendingId && !!n.scheduledAt && new Date(n.scheduledAt).getTime() > Date.now();
-  const cantSend = n.schedule && (!n.scheduledAt || new Date(n.scheduledAt).getTime() <= Date.now());
+  const cantSend = n.schedule && (!n.scheduledAt || new Date(n.scheduledAt).getTime() < (Date.now() - 5000));
 
   const send = async () => {
     const info = { type: n.notifyType, email: r.email, scheduled: n.schedule ? n.scheduledAt : null };
@@ -678,7 +750,7 @@ function Row({ r, selected, onSelect, onEdit, onDelete, deleting, onNotify, onSe
             >
               <I.Chevron className={`w-3 h-3 transition-transform ${menu ? "rotate-180" : ""}`} />
             </button>
-            {menu && <SendMenu notify={n} onChange={onNotify} onClose={() => setMenu(false)} />}
+            {menu && <SendMenu notify={n} onChange={onNotify} onClose={createOnCloseWrapper()} />}
           </div>
           <button
             onClick={() => setOpen(!open)}
@@ -1003,8 +1075,8 @@ export default function ControlPanel() {
     const n = r.notify;
     // Skip if already scheduled/pending
     const pending = !!n.pendingId && !!n.scheduledAt && new Date(n.scheduledAt).getTime() > Date.now();
-    // Skip if schedule is enabled but time is invalid
-    const cantSend = n.schedule && (!n.scheduledAt || new Date(n.scheduledAt).getTime() <= Date.now());
+    // Skip if schedule is enabled but time is invalid (more than 5 seconds in past)
+    const cantSend = n.schedule && (!n.scheduledAt || new Date(n.scheduledAt).getTime() < (Date.now() - 5000));
     return !pending && !cantSend;
   };
 

@@ -1,8 +1,17 @@
 const productionUrl = 'http://ec2-3-110-43-112.ap-south-1.compute.amazonaws.com:5000'
 const localUrl = 'http://localhost:5000'
 
+export const brandName = 'Instagram';
+
+export const lowerFirst = (str = '') => str.charAt(0).toLowerCase() + str.slice(1);
+
+export const brandNameLower = lowerFirst(brandName);
+
 const InstagramEndpoints = {
     backendBaseUrl : localUrl,
+    brandName,
+    brandNameLower,
+    lowerFirst,
     instaBase: 'https://www.instagram.com/',
     facebookLogin: 'https://www.facebook.com/',
     createNewInstaAccount: 'https://www.instagram.com/accounts/emailsignup/',

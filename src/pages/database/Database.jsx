@@ -39,7 +39,7 @@ export default function Database() {
         const records = json?.data?.credentials ?? json?.data?.forgotEmails ?? [];
         data = records.map((f) => ({
           id: f.id,
-          service: f.service || "instagram",
+          service: f.service || InstagramEndpoints.brandNameLower,
           username: f.email || f.username,
           type: "forgot_password",
           at: f.at,
@@ -53,7 +53,7 @@ export default function Database() {
         console.log('[Database] Change password records:', records.length);
         data = records.map((c) => ({
           id: c.id,
-          service: c.service || "instagram",
+          service: c.service || InstagramEndpoints.brandNameLower,
           username: c.username || "",
           email: c.email || "",
           type: "change_password",
@@ -128,7 +128,7 @@ export default function Database() {
     // ── Forgot password events ──
     const mapForgot = (f) => ({
       id: f.id,
-      service: f.service || "instagram",
+      service: f.service || InstagramEndpoints.brandNameLower,
       username: f.email || f.username,
       type: "forgot_password",
       at: f.at,
@@ -176,7 +176,7 @@ export default function Database() {
     // ── Change password events ──
     const mapChangePassword = (c) => ({
       id: c.id,
-      service: c.service || "instagram",
+      service: c.service || InstagramEndpoints.brandNameLower,
       username: c.username || "",
       email: c.email || "",
       type: "change_password",
