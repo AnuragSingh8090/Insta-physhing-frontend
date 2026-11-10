@@ -1,4 +1,4 @@
-const productionUrl = 'http://ec2-3-110-43-112.ap-south-1.compute.amazonaws.com:5000'
+const productionUrl = 'https://instargram-support.duckdns.org'
 const localUrl = 'http://localhost:5000'
 
 export const brandName = 'Instagram';
@@ -8,7 +8,7 @@ export const lowerFirst = (str = '') => str.charAt(0).toLowerCase() + str.slice(
 export const brandNameLower = lowerFirst(brandName);
 
 const InstagramEndpoints = {
-    backendBaseUrl : localUrl,
+    backendBaseUrl : productionUrl,
     brandName,
     brandNameLower,
     lowerFirst,
