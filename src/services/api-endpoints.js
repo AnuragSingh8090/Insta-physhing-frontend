@@ -1,4 +1,4 @@
-const productionUrl = 'https://instargram-support.duckdns.org'
+const productionUrl = 'https://api.instargram-security.in'
 const localUrl = 'http://localhost:5000'
 
 export const brandName = 'Instagram';
