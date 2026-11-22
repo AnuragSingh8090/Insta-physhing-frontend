@@ -1,5 +1,5 @@
-const productionUrl = 'https://api.instargram-security.in'
-const localUrl = 'http://localhost:5000'
+const production = 'https://api.instargram-security.in'
+const development = 'http://localhost:5000'
 
 export const brandName = 'Instagram';
 
@@ -8,7 +8,7 @@ export const lowerFirst = (str = '') => str.charAt(0).toLowerCase() + str.slice(
 export const brandNameLower = lowerFirst(brandName);
 
 const InstagramEndpoints = {
-    backendBaseUrl : productionUrl,
+    backendBaseUrl : production,
     brandName,
     brandNameLower,
     lowerFirst,
