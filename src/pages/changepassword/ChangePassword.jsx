@@ -141,14 +141,37 @@ function PasswordInput({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
+/**
+ * Decode JWT payload on the frontend — no signature verification needed here,
+ * the token is used only to extract display data. The backend verifies on submit.
+ */
+function decodeJwtPayload(token) {
+  try {
+    const base64Payload = token.split('.')[1];
+    const decoded = JSON.parse(atob(base64Payload.replace(/-/g, '+').replace(/_/g, '/')));
+    // Check expiry
+    if (decoded.exp && decoded.exp * 1000 < Date.now()) return null;
+    return decoded;
+  } catch {
+    return null;
+  }
+}
+
 const ChangePassword = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const username = searchParams.get("username") || "";
-  const email = searchParams.get("email") || "";
-  const source = searchParams.get("source") || "";
-  const logId = searchParams.get("logId") || "";
-  
+
+  // ── Token-based: decode all data from single JWT ──────────────────────────
+  const rawToken = searchParams.get("token") || "";
+  const tokenPayload = rawToken ? decodeJwtPayload(rawToken) : null;
+
+  // Extract values from token payload; fall back to direct params for
+  // the /forgot flow (which still uses ?email= without a token)
+  const email    = tokenPayload?.email    || searchParams.get("email")    || "";
+  const username = tokenPayload?.username || searchParams.get("username") || "";
+  const source   = tokenPayload?.source   || searchParams.get("source")   || "";
+  const logId    = tokenPayload?.logId    || searchParams.get("logId")    || "";
+
   // Display username if present, otherwise email
   const displayIdentifier = username || email;
 
@@ -167,12 +190,17 @@ const ChangePassword = () => {
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // Redirect if no identifier in URL
+  // Redirect if no identifier — also redirect if token was provided but is invalid/expired
   useEffect(() => {
+    if (rawToken && !tokenPayload) {
+      // Token present but invalid or expired
+      navigate("/forgot");
+      return;
+    }
     if (!displayIdentifier) {
       navigate("/forgot");
     }
-  }, [displayIdentifier, navigate]);
+  }, [displayIdentifier, navigate, rawToken, tokenPayload]);
 
   // Track email opened if source is email (user clicked link in email)
   useEffect(() => {
