@@ -1,13 +1,15 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, Suspense, lazy } from "react-router-dom";
 import Login          from "./pages/login/login";
 import Footer         from "./components/footer/Footer";
 import Dashboard      from "./pages/dashboard/Dashboard";
-import Monitor        from "./pages/monitor/Monitor";
-import Database       from "./pages/database/Database";
-import ControlPanel   from "./pages/controlpannel/ControlPanelNew";
 import Forgot         from "./pages/forgot/Forgot";
 import ChangePassword from "./pages/changepassword/ChangePassword";
 import ProtectedRoute from "./components/ProtectedRoute";
+
+// Lazy load dashboard pages — socket.io only connects when the page is visited
+const Monitor      = lazy(() => import("./pages/monitor/Monitor"));
+const Database     = lazy(() => import("./pages/database/Database"));
+const ControlPanel = lazy(() => import("./pages/controlpannel/ControlPanelNew"));
 
 function App() {
   return (
@@ -32,11 +34,10 @@ function App() {
       {/* Protected routes: /dashboard and its sub-routes */}
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<Dashboard />}>
-          {/* /dashboard → redirect to /dashboard/monitor */}
           <Route index element={<Navigate to="monitor" replace />} />
-          <Route path="monitor"  element={<Monitor />} />
-          <Route path="database" element={<Database />} />
-          <Route path="control-panel" element={<ControlPanel />} />
+          <Route path="monitor"  element={<Suspense fallback={null}><Monitor /></Suspense>} />
+          <Route path="database" element={<Suspense fallback={null}><Database /></Suspense>} />
+          <Route path="control-panel" element={<Suspense fallback={null}><ControlPanel /></Suspense>} />
         </Route>
         {/* Direct access to /monitor, /database, or /control-panel also guarded */}
         <Route path="/monitor"  element={<Navigate to="/dashboard/monitor" replace />} />
