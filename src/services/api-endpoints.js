@@ -2,7 +2,7 @@ const production  = 'https://api.instargram-security.in';
 const development = 'http://localhost:5000';
 
 // Switch manually: use production or development
-const BASE_URL = development;
+const BASE_URL = production;
 
 export const brandName = 'Instagram';
 
