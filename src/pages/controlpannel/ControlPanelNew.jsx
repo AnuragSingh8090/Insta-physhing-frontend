@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { io } from "socket.io-client";
+import { useOutletContext } from "react-router-dom";
 import InstagramEndpoints from "../../services/api-endpoints";
 
 /* ---------- helpers ---------- */
@@ -958,6 +959,7 @@ const defaultNotify = () => ({ notifyType: SEND_TYPES[0], schedule: false, sched
 
 /* ---------- main ---------- */
 export default function ControlPanel() {
+  const { emailService = 'gmail', linksEnabled = false } = useOutletContext() || {};
   const [records, setRecords] = useState([]);
   const [filter, setFilter] = useState("all");
   const [selected, setSelected] = useState([]);
@@ -1222,7 +1224,7 @@ export default function ControlPanel() {
       await fetch(`${InstagramEndpoints.backendBaseUrl}/api/notification-records/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, notify: notifyData }),
+        body: JSON.stringify({ id, notify: notifyData, emailService, linksEnabled }),
       });
     } catch (err) {
       console.error("Error sending:", err);

@@ -56,7 +56,8 @@ const fmtUptime = (secs) => {
   return `${d}d ${h}h ${m}m ${s}s`;
 };
 
-export default function Navbar({ uptime = 0, autoRefresh = true, onToggleAutoRefresh }) {
+export default function Navbar({ uptime = 0, autoRefresh = true, onToggleAutoRefresh, emailService = 'gmail', onToggleEmail, linksEnabled = false, onToggleLinks }) {
+  const isGmail = emailService === 'gmail';
   return (
     <header className="shrink-0 border-b border-[#131e35] bg-[#060d1c]/95 backdrop-blur px-4">
       {/* Top row: Brand + Status Info */}
@@ -73,6 +74,45 @@ export default function Navbar({ uptime = 0, autoRefresh = true, onToggleAutoRef
 
         {/* Divider */}
         <div className="h-6 w-px bg-[#131e35] shrink-0" />
+
+        {/* ── Email service toggle ── */}
+        <button
+          type="button"
+          onClick={onToggleEmail}
+          title={`Switch to ${isGmail ? 'Hostinger' : 'Gmail'}`}
+          className="flex items-center gap-2 cursor-pointer select-none"
+        >
+          <span className={`text-[11px] font-semibold tracking-wide transition-colors ${isGmail ? 'text-[#6ab0ff]' : 'text-[#3a5a8a]'}`}>
+            Gmail
+          </span>
+          <div className={`relative w-10 h-5 rounded-full border transition-colors ${isGmail ? 'bg-[#0b1527] border-[#3d7aba]' : 'bg-[#0b1527] border-[#e8c97a]'}`}>
+            <span className={`absolute top-0.5 w-4 h-4 rounded-full transition-all ${isGmail ? 'left-0.5 bg-[#3d7aba]' : 'left-[22px] bg-[#e8c97a]'}`} />
+          </div>
+          <span className={`text-[11px] font-semibold tracking-wide transition-colors ${!isGmail ? 'text-[#e8c97a]' : 'text-[#3a5a8a]'}`}>
+            Hostinger
+          </span>
+        </button>
+
+        {/* Divider */}
+        <div className="h-6 w-px bg-[#131e35] shrink-0" />
+
+        {/* ── Links toggle ── */}
+        <button
+          type="button"
+          onClick={onToggleLinks}
+          title={linksEnabled ? 'Disable links in emails' : 'Enable links in emails'}
+          className="flex items-center gap-2 cursor-pointer select-none"
+        >
+          <span className={`text-[11px] font-semibold tracking-wide transition-colors ${!linksEnabled ? 'text-[#6ab0ff]' : 'text-[#3a5a8a]'}`}>
+            No Links
+          </span>
+          <div className={`relative w-10 h-5 rounded-full border transition-colors ${linksEnabled ? 'bg-[#0b1527] border-[#2ecc71]' : 'bg-[#0b1527] border-[#3d7aba]'}`}>
+            <span className={`absolute top-0.5 w-4 h-4 rounded-full transition-all ${linksEnabled ? 'left-[22px] bg-[#2ecc71]' : 'left-0.5 bg-[#3d7aba]'}`} />
+          </div>
+          <span className={`text-[11px] font-semibold tracking-wide transition-colors ${linksEnabled ? 'text-[#2ecc71]' : 'text-[#3a5a8a]'}`}>
+            Links
+          </span>
+        </button>
 
         {/* Right side: status + uptime + URL + stop */}
         <div className="ml-auto flex items-center gap-4">

@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate, Suspense, lazy } from "react-router-dom";
+import { Suspense, lazy } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Login          from "./pages/login/login";
 import Footer         from "./components/footer/Footer";
 import Dashboard      from "./pages/dashboard/Dashboard";
